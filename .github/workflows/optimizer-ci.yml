@@ -1,0 +1,72 @@
+name: Blaze Ultimate Optimizer native source validation
+
+on:
+  pull_request:
+    paths:
+      - 'BlazeUltimateOptimizer.c'
+      - '*.py'
+      - '*.png'
+      - '*.ico'
+      - '.github/workflows/optimizer-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'BlazeUltimateOptimizer.c'
+      - '*.py'
+      - '*.png'
+      - '*.ico'
+      - '.github/workflows/optimizer-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: optimizer-verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-static-build:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile and syntax-check build scripts
+        shell: pwsh
+        run: |
+          python -m py_compile build.py package.py resources.py verify.py
+          if ($LASTEXITCODE -ne 0) { throw 'Python source invalid' }
+      - name: Prepare exact image resource builder
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check Pillow==11.3.0
+          if ($LASTEXITCODE -ne 0) { throw 'Pillow install failed' }
+          Get-Command clang,lld-link -ErrorAction Stop | Select-Object Name,Source
+      - name: Compile x64 and ARM64 Windows preview source
+        shell: pwsh
+        run: |
+          python build.py
+          if ($LASTEXITCODE -ne 0) { throw 'x64 build failed' }
+          python build.py --arm64
+          if ($LASTEXITCODE -ne 0) { throw 'ARM64 build failed' }
+      - name: Verify PE identities, imports and safe-mode restrictions
+        shell: pwsh
+        run: |
+          python verify.py
+          if ($LASTEXITCODE -ne 0) { throw 'PE and source safety checks failed' }
+      - name: Preserve source-to-binary checksums without publishing executables
+        shell: pwsh
+        run: |
+          @('BlazeUltimateOptimizer-x64.exe','BlazeUltimateOptimizer-arm64.exe') | ForEach-Object {
+            if (!(Test-Path $_)) { throw "Missing build: $_" }
+            "$((Get-FileHash $_ -Algorithm SHA256).Hash.ToLower())  $_"
+          } | Set-Content -Encoding ascii CI-SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: optimizer-v12-native-build-checksums
+          path: CI-SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 7
