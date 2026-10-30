@@ -1,0 +1,54 @@
+name: Optimizer cleanup - source equivalence and native compile
+on:
+  push:
+    branches: ["refactor/**"]
+    paths: ["src/**", "scripts/**", "ARCHITECTURE.md", ".github/workflows/refactor-ci.yml"]
+  pull_request:
+    branches: ["preview/**"]
+    paths: ["src/**", "scripts/**", "ARCHITECTURE.md", ".github/workflows/refactor-ci.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-and-build:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify exact preserved C source and script syntax
+        run: |
+          python scripts/verify_source_layout.py
+          python -m py_compile src/build.py src/verify.py src/resources.py scripts/verify_source_layout.py
+      - name: Fetch checksum-pinned Blaze Systems logo crop
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $u = 'https://raw.githubusercontent.com/BlazeDevStudio/BlazingSystems-Labs/030a25ddefaeb594adf5c26f917ad92f8504f970/BlazeUltimateOptimizer/v1.2-preview/BlazeSystems-LogoV2-source-crop.png'
+          Invoke-WebRequest -Uri $u -OutFile 'src/BlazeSystems-LogoV2-source-crop.png'
+          $hash = (Get-FileHash 'src/BlazeSystems-LogoV2-source-crop.png' -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($hash -ne '5a42bf3f61b66a74310bb249b5c78e0322196456a80ecc468c416f29eba12f5d') { throw 'Logo hash mismatch' }
+      - name: Prepare native build tools
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check Pillow==11.3.0
+          clang --version
+          lld-link --version
+      - name: Compile x64/ARM64 and verify existing source/PE safety gates
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python src/build.py
+          if ($LASTEXITCODE -ne 0) { throw 'x64 failed' }
+          python src/build.py --arm64
+          if ($LASTEXITCODE -ne 0) { throw 'ARM64 failed' }
+          python src/verify.py
+          if ($LASTEXITCODE -ne 0) { throw 'static gates failed' }
+      - name: Print checksum evidence only - no binary publication
+        shell: pwsh
+        run: |
+          Get-FileHash src/BlazeUltimateOptimizer-x64.exe,src/BlazeUltimateOptimizer-arm64.exe -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLowerInvariant())  $([IO.Path]::GetFileName($_.Path))" }
