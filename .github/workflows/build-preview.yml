@@ -1,0 +1,67 @@
+name: Blaze Ultimate Optimizer v1.3 Preview
+on:
+  push:
+    branches: ["preview/**"]
+    paths: ["src/**", ".github/workflows/build-preview.yml", "README.md"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch approved Logo V2 crop from immutable historical commit
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $url = 'https://raw.githubusercontent.com/BlazeDevStudio/BlazingSystems-Labs/030a25ddefaeb594adf5c26f917ad92f8504f970/BlazeUltimateOptimizer/v1.2-preview/BlazeSystems-LogoV2-source-crop.png'
+          Invoke-WebRequest -Uri $url -OutFile 'src/BlazeSystems-LogoV2-source-crop.png'
+          $actual = (Get-FileHash 'src/BlazeSystems-LogoV2-source-crop.png' -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne '5a42bf3f61b66a74310bb249b5c78e0322196456a80ecc468c416f29eba12f5d') { throw 'Brand art checksum mismatch; build aborted' }
+      - name: Install build dependency
+        run: python -m pip install --disable-pip-version-check Pillow
+      - name: Build x64 and ARM64
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          clang --version
+          lld-link --version
+          python src/build.py
+          if ($LASTEXITCODE -ne 0) { throw 'x64 compiler failed' }
+          python src/build.py --arm64
+          if ($LASTEXITCODE -ne 0) { throw 'ARM64 compiler failed' }
+          python src/verify.py
+          if ($LASTEXITCODE -ne 0) { throw 'static verifier failed' }
+      - name: Package portable builds and source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path release | Out-Null
+          Copy-Item src/BlazeUltimateOptimizer-x64.exe release/
+          Copy-Item src/BlazeUltimateOptimizer-arm64.exe release/
+          $files = @('BlazeUltimateOptimizer-x64.exe','BlazeUltimateOptimizer-arm64.exe','BlazeUltimateOptimizer.c','build.py','resources.py','verify.py','BlazeUltimateOptimizer.ico','BlazeSystems-LogoV2-source-crop.png')
+          Compress-Archive -LiteralPath ($files | ForEach-Object { "src/$_" }) -DestinationPath release/BlazeUltimateOptimizer-v1.3-preview-complete.zip -Force
+          Get-ChildItem release -File | ForEach-Object { "$( (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() )  $($_.Name)" } | Set-Content release/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BlazeUltimateOptimizer-v1.3-preview
+          path: release/*
+      - name: Publish clearly marked unsigned preview on dedicated repo
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = 'blaze-ultimate-optimizer-v1.3-preview'
+          gh release view $tag --repo "${{ github.repository }}" *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --repo "${{ github.repository }}" --target "${{ github.sha }}" --title "Blaze Ultimate Optimizer v1.3 Preview (unsigned)" --prerelease --notes "Native low-spec Windows x64 and experimental ARM64 preview. Five-second CPU/RAM monitoring, bounded process I/O and soft+hard page fault deltas, .NET 1026 event counts; retains reversible safe fixes. Compiled/static-verified only; hardware tests pending."
+            if ($LASTEXITCODE -ne 0) { throw 'Release creation failed' }
+          }
+          gh release upload $tag release/* --repo "${{ github.repository }}" --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }
