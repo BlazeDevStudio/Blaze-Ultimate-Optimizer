@@ -331,7 +331,7 @@ static void metric_cpu(void){
 typedef struct {ULONGLONG rOps,wOps,oOps,rBytes,wBytes,oBytes;} IO_COUNT;
 /* Report process I/O deltas, not physical SSD I/O, and both soft+hard page faults. */
 static void activity_sample(void){
-    HANDLE hs[240];DWORD pf[240];ULONGLONG rd[240],wr[240];BOOL havepf[240],haveio[240];
+    static HANDLE hs[240];static DWORD pf[240];static ULONGLONG rd[240],wr[240];static BOOL havepf[240],haveio[240];
     DWORD n=0;HANDLE snap=CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);
     if(snap!=INVALID_HANDLE_VALUE){
       PROCESSENTRY32W p;p.dwSize=sizeof(p);
