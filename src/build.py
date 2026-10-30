@@ -3,7 +3,7 @@ p=pathlib.Path(__file__).parent
 arch='arm64' if '--arm64' in sys.argv else 'x64'
 target='aarch64-windows-msvc' if arch=='arm64' else 'x86_64-windows-msvc'
 subprocess.run([sys.executable,str(p/'resources.py')],check=True)
-s=(p/'BlazeUltimateOptimizer.c').read_text()
+s=(p/'platform_win32.h').read_text(encoding='utf-8')
 all_functions=re.findall(r'^DLL\s+[^\n]+?\s+WINAPI\s+(\w+)\s*\(',s,re.M)
 libs={"kernel32":[],"user32":[],"gdi32":[],"advapi32":[],"shell32":[]}
 user=set('DrawTextW FillRect LoadIconW MessageBoxW PostMessageW SendMessageW DefWindowProcW LoadCursorW RegisterClassExW CreateWindowExW ShowWindow UpdateWindow SetWindowTextW MoveWindow EnableWindow DestroyWindow PostQuitMessage GetMessageW TranslateMessage DispatchMessageW SystemParametersInfoW'.split())

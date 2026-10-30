@@ -1,0 +1,8 @@
+src/*.exe
+src/*.obj
+src/*.lib
+src/*.dll
+src/*.def
+src/*.res
+src/*.ico
+**/__pycache__/
