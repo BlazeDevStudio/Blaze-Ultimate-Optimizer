@@ -5,13 +5,13 @@ target='aarch64-windows-msvc' if arch=='arm64' else 'x86_64-windows-msvc'
 subprocess.run([sys.executable,str(p/'resources.py')],check=True)
 s=(p/'platform_win32.h').read_text(encoding='utf-8')
 all_functions=re.findall(r'^DLL\s+[^\n]+?\s+WINAPI\s+(\w+)\s*\(',s,re.M)
-libs={"kernel32":[],"user32":[],"gdi32":[],"advapi32":[],"shell32":[]}
+libs={"kernel32":[],"user32":[],"gdi32":[],"advapi32":[],"shell32":[],"pdh":[]}
 user=set('DrawTextW FillRect LoadIconW MessageBoxW PostMessageW SendMessageW DefWindowProcW LoadCursorW RegisterClassExW CreateWindowExW ShowWindow UpdateWindow SetWindowTextW MoveWindow EnableWindow DestroyWindow PostQuitMessage GetMessageW TranslateMessage DispatchMessageW SystemParametersInfoW'.split())
 gdi=set('GetStockObject CreateSolidBrush SetTextColor SetBkMode DeleteObject'.split())
 adv=set('OpenSCManagerW OpenServiceW QueryServiceConfigW ChangeServiceConfigW CloseServiceHandle RegOpenKeyExW RegCreateKeyExW RegQueryValueExW RegSetValueExW RegDeleteValueW RegEnumValueW RegCloseKey OpenEventLogW ReadEventLogW CloseEventLog'.split())
 shell={'ShellExecuteW'}
 for a in all_functions:
-    x='user32' if a in user else 'gdi32' if a in gdi else 'advapi32' if a in adv else 'shell32' if a in shell else 'kernel32'
+    x='pdh' if a.startswith('Pdh') else 'user32' if a in user else 'gdi32' if a in gdi else 'advapi32' if a in adv else 'shell32' if a in shell else 'kernel32'
     libs[x].append(a)
 for lib,names in libs.items():
     (p/(lib+'.def')).write_text('LIBRARY '+lib+'.dll\nEXPORTS\n'+''.join(' '+name+'\n' for name in sorted(set(names))))

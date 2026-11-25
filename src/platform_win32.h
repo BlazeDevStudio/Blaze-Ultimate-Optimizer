@@ -42,6 +42,16 @@ typedef struct { DWORD dwFileAttributes;FILETIME ftCreationTime,ftLastAccessTime
 typedef struct { DWORD Length,Reserved,RecordNumber,TimeGenerated,TimeWritten,EventID;WORD EventType,NumStrings,EventCategory,ReservedFlags;DWORD ClosingRecordNumber,StringOffset,UserSidLength,UserSidOffset,DataLength,DataOffset; } EVENTLOGRECORD;
 
 DLL HINSTANCE WINAPI GetModuleHandleW(LPCWSTR);
+/* PDH native Win64 ABI: DWORD status followed by aligned 64-bit union. */
+typedef struct {DWORD CStatus;union {LONG longValue;long long largeValue;double doubleValue;} value;} BLAZE_PDH_VALUE;
+_Static_assert(sizeof(BLAZE_PDH_VALUE)==16,"PDH value ABI");
+_Static_assert(__builtin_offsetof(BLAZE_PDH_VALUE,value)==8,"PDH value alignment");
+DLL LONG WINAPI PdhOpenQueryW(LPCWSTR,ULONG_PTR,HANDLE*);
+DLL LONG WINAPI PdhAddEnglishCounterW(HANDLE,LPCWSTR,ULONG_PTR,HANDLE*);
+DLL LONG WINAPI PdhSetCounterScaleFactor(HANDLE,LONG);
+DLL LONG WINAPI PdhCollectQueryData(HANDLE);
+DLL LONG WINAPI PdhGetFormattedCounterValue(HANDLE,DWORD,DWORD*,BLAZE_PDH_VALUE*);
+DLL LONG WINAPI PdhCloseQuery(HANDLE);
 DLL DWORD WINAPI GetLastError(void);
 DLL WORD WINAPI GetActiveProcessorGroupCount(void);
 DLL void WINAPI ExitProcess(UINT);

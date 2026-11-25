@@ -38,6 +38,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Health tests compile failed' }
           .\health_math_test.exe
           if ($LASTEXITCODE -ne 0) { throw 'Health tests failed' }
+          clang -std=c11 -Wall -Wextra -Werror tests/disk_metrics_test.c -o disk_metrics_test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Disk tests compile failed' }
+          .\disk_metrics_test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Disk tests failed' }
       - name: Fetch checksum-pinned Blaze Systems logo crop
         shell: pwsh
         run: |

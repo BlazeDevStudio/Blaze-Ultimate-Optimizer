@@ -9,6 +9,8 @@ static int g_events_ok=0,g_run_count=0,g_highmem=0,g_lowdisk=0,g_extremedisk=0,g
 static ULONGLONG g_ram=0,g_free=0,g_disk=0,g_uptime=0;
 static unsigned g_memload=0;
 static int g_mem_ok=0,g_disk_ok=0;
+static unsigned g_disk_perf_valid=0;
+static int g_disk_latency_flag=0;
 static unsigned g_cpu_intervals=0,g_cpu_hot_intervals=0;
 static unsigned g_cpu=0,g_cpuTopPct=0;
 static WCHAR g_cpuTopName[MAX_PATH];
