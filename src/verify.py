@@ -2,7 +2,7 @@ from pathlib import Path
 import struct,hashlib
 p=Path(__file__).parent
 exeNames=['BlazeUltimateOptimizer-x64.exe','BlazeUltimateOptimizer-arm64.exe']
-s=''.join((p/name).read_text(encoding='utf-8') for name in ('platform_win32.h','state.inc','text.inc','events.inc','crash_parser.inc','event_scan.inc','health_math.inc','disk_metrics.inc','disk_report.inc','adapter_metrics.inc','adapter_report.inc','sampling.inc','inventory_helpers.inc','inventory.inc','report.inc','repairs.inc','runtime.inc','ui.inc'))
+s=''.join((p/name).read_text(encoding='utf-8') for name in ('platform_win32.h','state.inc','text.inc','events.inc','crash_parser.inc','event_scan.inc','health_math.inc','disk_metrics.inc','disk_report.inc','adapter_metrics.inc','adapter_report.inc','history_ring.inc','history_report.inc','sampling.inc','inventory_helpers.inc','inventory.inc','report.inc','repairs.inc','runtime.inc','ui.inc'))
 for name,machine in zip(exeNames,(0x8664,0xAA64)):
  data=(p/name).read_bytes()
  assert data[:2]==b'MZ',name
@@ -57,3 +57,6 @@ assert "SetupDiGetClassDevsW" in s and "inventory_core_count" in s and "inventor
 for name in exeNames:
  assert b"setupapi.dll" in (p/name).read_bytes().lower(),name
 print("Native read-only inventory gates: static PASS")
+
+assert "HISTORY_CAP 120" in s and "history_repeat_high" in s and "HIST_POST_FIX" in s
+print("Bounded session history and action-label gates: static PASS")

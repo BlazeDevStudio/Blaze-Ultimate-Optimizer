@@ -1,6 +1,7 @@
 static void save_report(void){WCHAR base[512];DWORD n=GetEnvironmentVariableW(L"LOCALAPPDATA",base,512);if(!n||n>=512){n=GetTempPathW(512,base);if(!n||n>=512)return;}else wcat(base,L"\\",512);wcopy(g_reportPath,base,512);wcat(g_reportPath,L"BlazeUltimateOptimizer-Report.txt",512);HANDLE h=CreateFileW(g_reportPath,GENERIC_WRITE,FILE_SHARE_READ,0,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,0);if(h==INVALID_HANDLE_VALUE)return;DWORD wrote;WORD bom=0xFEFF;WriteFile(h,&bom,2,&wrote,0);WriteFile(h,g_report,g_pos*2,&wrote,0);CloseHandle(h);}
 static DWORD WINAPI worker(LPVOID ignored){
     (void)ignored;
+    g_history_phase=g_mode==0?HIST_DIAGNOSE:HIST_PRE_ACTION;
     collect();
     if(g_mode==1){
         ULONGLONG beforeDisk=g_free;
@@ -12,6 +13,7 @@ static DWORD WINAPI worker(LPVOID ignored){
         ULONGLONG deletedBytes=g_freed;
         unsigned deletedFiles=g_deleted;
         int optApplied=g_opt_ok;
+        g_history_phase=HIST_POST_FIX;
         collect(); /* Refresh the verdict based on the actual post-fix condition. */
         heading(L"ONE-CLICK FIX RECEIPT AND RECHECK");
         append(L"Visual effects/transparency update: ");line(optApplied?L"attempted and at least one setting applied; reversible via RESTORE PREFERENCES":L"not applied; consult Windows display settings");

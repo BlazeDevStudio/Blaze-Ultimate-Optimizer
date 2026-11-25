@@ -50,6 +50,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Inventory tests compile failed' }
           .\inventory_test.exe
           if ($LASTEXITCODE -ne 0) { throw 'Inventory tests failed' }
+          clang -std=c11 -Wall -Wextra -Werror tests/history_test.c -o history_test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'History tests compile failed' }
+          .\history_test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'History tests failed' }
       - name: Fetch checksum-pinned Blaze Systems logo crop
         shell: pwsh
         run: |

@@ -3,6 +3,8 @@
 #include "disk_report.inc"
 #include "adapter_metrics.inc"
 #include "adapter_report.inc"
+#include "history_ring.inc"
+#include "history_report.inc"
 static int read_cpu(CPU_COUNTERS*out){
     FILETIME i,k,u;
     if(!GetSystemTimes(&i,&k,&u))return 0;
@@ -81,13 +83,13 @@ static void activity_sample(void){
     CPU_COUNTERS a,b;CPU_DELTA d;ULONGLONG elapsed=0,busy=0;
     unsigned peak=0;int previous=read_cpu(&a);
     HEALTH_RANGE ram={0,0,0};
-    unsigned memhot=0;
+    unsigned memhot=0,memsum=0;
     DISK_CAPTURE disk;disk_capture_begin(&disk);
     static ADAPTER_CAPTURE adapters;adapter_capture_begin(&adapters);
     for(int k=0;k<5;k++){
       MEMORYSTATUSEX m;m.dwLength=sizeof(m);
       if(GlobalMemoryStatusEx(&m)&&health_memory_valid(m.ullTotalPhys,m.ullAvailPhys,m.dwMemoryLoad)){
-        health_range_add(&ram,m.ullAvailPhys);if(m.dwMemoryLoad>=83)memhot++;
+        health_range_add(&ram,m.ullAvailPhys);memsum+=m.dwMemoryLoad;if(m.dwMemoryLoad>=83)memhot++;
       }
       Sleep(1000);
       int current=read_cpu(&b);
@@ -134,4 +136,5 @@ static void activity_sample(void){
     line(L"Process I/O can include non-disk sources; results cannot establish SSD latency or physical disk throughput.");
     disk_report(&disk);
     adapter_report(&adapters);
+    history_capture(elapsed?health_percent(busy,elapsed):0,g_cpu_intervals,ram.count?memsum/ram.count:0,ram.count,&disk,&adapters);
 }
