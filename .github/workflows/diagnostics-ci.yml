@@ -34,6 +34,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Crash parser tests compile failed' }
           .\crash_parser_test.exe
           if ($LASTEXITCODE -ne 0) { throw 'Crash parser tests failed' }
+          clang -std=c11 -Wall -Wextra -Werror tests/health_math_test.c -o health_math_test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Health tests compile failed' }
+          .\health_math_test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Health tests failed' }
       - name: Fetch checksum-pinned Blaze Systems logo crop
         shell: pwsh
         run: |

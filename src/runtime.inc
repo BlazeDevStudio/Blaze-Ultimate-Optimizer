@@ -5,6 +5,7 @@ static DWORD WINAPI worker(LPVOID ignored){
     if(g_mode==1){
         ULONGLONG beforeDisk=g_free;
         unsigned beforeMem=g_memload;
+        int beforeDiskOk=g_disk_ok,beforeMemOk=g_mem_ok;
         /* Safe actions are performed only after explicit confirmation on the UI thread. */
         visual_optimize();
         clean_user_temp();
@@ -15,9 +16,10 @@ static DWORD WINAPI worker(LPVOID ignored){
         heading(L"ONE-CLICK FIX RECEIPT AND RECHECK");
         append(L"Visual effects/transparency update: ");line(optApplied?L"attempted and at least one setting applied; reversible via RESTORE PREFERENCES":L"not applied; consult Windows display settings");
         append(L"Old personal temp files deleted: ");num(deletedFiles);append(L" (approx ");fmt_size(deletedBytes);line(L" apparent file size)");
-        append(L"Free disk: before ");fmt_size(beforeDisk);append(L", after ");fmt_size(g_free);nl();
-        append(L"Memory load: before ");num(beforeMem);append(L"%, after ");num(g_memload);line(L"% (naturally fluctuates; not a RAM boost)");
-if(g_memload+4<=beforeMem)line(L"OUTCOME: lower observed RAM load, but this snapshot cannot attribute the change to the repair.");
+        append(L"Free disk: before ");if(beforeDiskOk)fmt_size(beforeDisk);else append(L"unavailable");append(L", after ");if(g_disk_ok)fmt_size(g_free);else append(L"unavailable");nl();
+        append(L"Memory load: before ");if(beforeMemOk){num(beforeMem);append(L"%");}else append(L"unavailable");append(L", after ");if(g_mem_ok){num(g_memload);append(L"%");}else append(L"unavailable");line(L" (naturally fluctuates; not a RAM boost)");
+if(!beforeMemOk||!g_mem_ok)line(L"OUTCOME: RAM comparison unavailable; cannot determine a measured change.");
+else if(g_memload+4<=beforeMem)line(L"OUTCOME: lower observed RAM load, but this snapshot cannot attribute the change to the repair.");
 else line(L"OUTCOME: NO MEASURABLE RAM RELIEF from safe fix. Focus on unused application sessions or the specific crash clusters above.");
 if(g_crashes)line(L"UNRESOLVED: historical application crashes remain. SAFE FIX does not repair printer/audio drivers or third-party apps.");
         line(L"Deleted temp files cannot be restored. No system services, pagefile, or security settings were modified.");

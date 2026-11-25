@@ -43,6 +43,7 @@ typedef struct { DWORD Length,Reserved,RecordNumber,TimeGenerated,TimeWritten,Ev
 
 DLL HINSTANCE WINAPI GetModuleHandleW(LPCWSTR);
 DLL DWORD WINAPI GetLastError(void);
+DLL WORD WINAPI GetActiveProcessorGroupCount(void);
 DLL void WINAPI ExitProcess(UINT);
 DLL void WINAPI Sleep(DWORD);
 DLL ULONGLONG WINAPI GetTickCount64(void);
