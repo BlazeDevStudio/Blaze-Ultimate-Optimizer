@@ -46,6 +46,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Adapter tests compile failed' }
           .\adapter_metrics_test.exe
           if ($LASTEXITCODE -ne 0) { throw 'Adapter tests failed' }
+          clang -std=c11 -Wall -Wextra -Werror tests/inventory_test.c -o inventory_test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Inventory tests compile failed' }
+          .\inventory_test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Inventory tests failed' }
       - name: Fetch checksum-pinned Blaze Systems logo crop
         shell: pwsh
         run: |

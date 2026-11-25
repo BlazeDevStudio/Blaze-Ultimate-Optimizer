@@ -1,3 +1,4 @@
+#include "inventory.inc"
 static void stats(void){MEMORYSTATUSEX mem;mem.dwLength=sizeof(mem);if(GlobalMemoryStatusEx(&mem)&&health_memory_valid(mem.ullTotalPhys,mem.ullAvailPhys,mem.dwMemoryLoad)){g_mem_ok=1;g_ram=mem.ullTotalPhys;g_memload=mem.dwMemoryLoad;g_highmem=mem.dwMemoryLoad>=83;append(L"Physical RAM: ");fmt_size(mem.ullTotalPhys);append(L" | Available: ");fmt_size(mem.ullAvailPhys);append(L" | Memory load: ");num(mem.dwMemoryLoad);line(L"%");append(L"Virtual/commit capacity: ");fmt_size(mem.ullTotalPageFile);append(L" | Available commit: ");fmt_size(mem.ullAvailPageFile);nl();if(g_ram<=2147483648ULL)line(L"DEVICE PROFILE: EXTREME 1-2 GB RAM. Prioritize one active application; pagefile must remain enabled.");
 else if(g_ram<=4294967296ULL)line(L"DEVICE PROFILE: LIGHT 4 GB RAM. High-impact work is grouping/closing unused app sessions.");
 if(mem.ullTotalPageFile<mem.ullTotalPhys+268435456ULL){line(L"NOTICE: Commit capacity is unusually small. Verify the pagefile is SYSTEM-MANAGED.");}}else line(L"Physical RAM/commit snapshot unavailable.");
@@ -78,4 +79,4 @@ for(int i=0;i<g_app_names_count;i++){
   }
 }
 if(!matched)line(L"No safe vendor-specific repair pattern matched. Inspect full Event Viewer messages before changing drivers or services.");
-make_recommendations();}
+make_recommendations();inventory_report();}
