@@ -2,7 +2,7 @@ from pathlib import Path
 import struct,hashlib
 p=Path(__file__).parent
 exeNames=['BlazeUltimateOptimizer-x64.exe','BlazeUltimateOptimizer-arm64.exe']
-s=''.join((p/name).read_text(encoding='utf-8') for name in ('platform_win32.h','state.inc','text.inc','events.inc','crash_parser.inc','event_scan.inc','health_math.inc','disk_metrics.inc','disk_report.inc','sampling.inc','report.inc','repairs.inc','runtime.inc','ui.inc'))
+s=''.join((p/name).read_text(encoding='utf-8') for name in ('platform_win32.h','state.inc','text.inc','events.inc','crash_parser.inc','event_scan.inc','health_math.inc','disk_metrics.inc','disk_report.inc','adapter_metrics.inc','adapter_report.inc','sampling.inc','report.inc','repairs.inc','runtime.inc','ui.inc'))
 for name,machine in zip(exeNames,(0x8664,0xAA64)):
  data=(p/name).read_bytes()
  assert data[:2]==b'MZ',name
@@ -49,3 +49,6 @@ assert "PdhAddEnglishCounterW" in s and "PdhCloseQuery" in s and "disk_latency_a
 for name in exeNames:
  assert b'pdh.dll' in (p/name).read_bytes().lower(),name
 print("Native PDH import and availability gates: static PASS")
+
+assert "PdhGetFormattedCounterArrayW" in s and "adapter_is_total" in s and "g_adapter_perf_valid" in s
+print("GPU/network wildcard counter and coverage gates: static PASS")

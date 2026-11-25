@@ -1,6 +1,8 @@
 #include "health_math.inc"
 #include "disk_metrics.inc"
 #include "disk_report.inc"
+#include "adapter_metrics.inc"
+#include "adapter_report.inc"
 static int read_cpu(CPU_COUNTERS*out){
     FILETIME i,k,u;
     if(!GetSystemTimes(&i,&k,&u))return 0;
@@ -81,6 +83,7 @@ static void activity_sample(void){
     HEALTH_RANGE ram={0,0,0};
     unsigned memhot=0;
     DISK_CAPTURE disk;disk_capture_begin(&disk);
+    static ADAPTER_CAPTURE adapters;adapter_capture_begin(&adapters);
     for(int k=0;k<5;k++){
       MEMORYSTATUSEX m;m.dwLength=sizeof(m);
       if(GlobalMemoryStatusEx(&m)&&health_memory_valid(m.ullTotalPhys,m.ullAvailPhys,m.dwMemoryLoad)){
@@ -98,6 +101,7 @@ static void activity_sample(void){
       if(current)a=b;
       previous=current; /* Rebaseline after missing readings; never bridge gaps. */
     }
+    adapter_capture_end(&adapters);
     disk_capture_end(&disk);
     ULONGLONG faults=0,reads=0,writes=0;unsigned pfPairs=0,ioPairs=0;int ioOverflow=0;
     for(DWORD i=0;i<n;i++){
@@ -129,4 +133,5 @@ static void activity_sample(void){
     append(L" | paired processes: ");num(ioPairs);append(L"/");num(n);nl();
     line(L"Process I/O can include non-disk sources; results cannot establish SSD latency or physical disk throughput.");
     disk_report(&disk);
+    adapter_report(&adapters);
 }

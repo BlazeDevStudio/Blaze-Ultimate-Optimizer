@@ -34,6 +34,7 @@ if(g_crashes||g_hangs){append(L"APPLICATION INSTABILITY - ");num(g_crashes);appe
 if(g_sys_err>=12||g_app_err>=12){line(L"REPEATED LOGGED ERRORS - investigate the event SOURCE/DETAILS before trying broad Windows repairs.");findings++;}
 if(g_disk_latency_flag){line(L"STORAGE RESPONSE WARNING - aggregate read or write response reached 50 ms in this short capture. Repeat under typical load and inspect individual disks; this is a screening threshold, not proof of failure.");if(g_storage_faults)line(L"Storage-related event records are also present; their device and timing have not been correlated with this sample.");findings++;}
 if(g_disk_perf_valid<DISK_METRIC_COUNT){line(L"PHYSICAL DISK COUNTER COVERAGE INCOMPLETE - missing counters cannot exclude a storage bottleneck.");findings++;}
+if(g_adapter_perf_valid<ADAPTER_METRIC_COUNT){line(L"NETWORK/GPU COUNTER COVERAGE INCOMPLETE - missing or partial instances cannot exclude pressure.");findings++;}
 if(!g_mem_ok||!g_disk_ok||!g_cpu_ok||g_cpu_intervals<5){line(L"RESOURCE COVERAGE INCOMPLETE - missing or invalid samples cannot exclude resource pressure.");findings++;}
 if(!g_events_ok){line(L"EVENT LOG COVERAGE INCOMPLETE - this report cannot exclude crashes or hardware errors. Review each log status; elevation may help access failures but not scan limits or malformed data.");findings++;}
 if(!findings)line(L"No major pressure flags from sampled metrics and accessible log records. Intermittent freezes still require a longer capture; check temperatures, drivers, and Event Viewer around the exact freeze time.");
