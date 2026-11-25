@@ -54,6 +54,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'History tests compile failed' }
           .\history_test.exe
           if ($LASTEXITCODE -ne 0) { throw 'History tests failed' }
+          clang -std=c11 -Wall -Wextra -Werror tests/optimization_rules_test.c -o optimization_rules_test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Optimization policy tests compile failed' }
+          .\optimization_rules_test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Optimization policy tests failed' }
       - name: Fetch checksum-pinned Blaze Systems logo crop
         shell: pwsh
         run: |
