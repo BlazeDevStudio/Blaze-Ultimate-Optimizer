@@ -1,5 +1,5 @@
 /* Blaze Ultimate Optimizer: preserved single translation unit, ordered by responsibility.
- * See ARCHITECTURE.md. This source-only cleanup does not change runtime behavior.
+ * See ARCHITECTURE.md. Unreleased diagnostics continuation; optimizer action modules preserved.
  */
 #include "platform_win32.h"
 #include "state.inc"

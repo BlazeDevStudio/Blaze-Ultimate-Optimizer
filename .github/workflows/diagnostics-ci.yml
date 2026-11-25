@@ -30,6 +30,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Event tests compile failed' }
           .\event_scan_test.exe
           if ($LASTEXITCODE -ne 0) { throw 'Event tests failed' }
+          clang -std=c11 -Wall -Wextra -Werror tests/crash_parser_test.c -o crash_parser_test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Crash parser tests compile failed' }
+          .\crash_parser_test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Crash parser tests failed' }
       - name: Fetch checksum-pinned Blaze Systems logo crop
         shell: pwsh
         run: |

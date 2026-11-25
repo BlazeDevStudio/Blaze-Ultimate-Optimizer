@@ -2,7 +2,7 @@ from pathlib import Path
 import struct,hashlib
 p=Path(__file__).parent
 exeNames=['BlazeUltimateOptimizer-x64.exe','BlazeUltimateOptimizer-arm64.exe']
-s=''.join((p/name).read_text(encoding='utf-8') for name in ('platform_win32.h','state.inc','text.inc','events.inc','event_scan.inc','sampling.inc','report.inc','repairs.inc','runtime.inc','ui.inc'))
+s=''.join((p/name).read_text(encoding='utf-8') for name in ('platform_win32.h','state.inc','text.inc','events.inc','crash_parser.inc','event_scan.inc','sampling.inc','report.inc','repairs.inc','runtime.inc','ui.inc'))
 for name,machine in zip(exeNames,(0x8664,0xAA64)):
  data=(p/name).read_bytes()
  assert data[:2]==b'MZ',name
@@ -38,3 +38,6 @@ assert 'GetProcessIoCounters' in s and 'g_clr_events' in s
 assert 'audioReported' in s and 'epsonReported' in s
 assert 'SOFT + HARD, not hard faults/sec' in s
 print('v1.3 process I/O and page fault transparency; crash families: static PASS')
+
+assert "appPath" not in s and "g_crash_rejected" in s
+print("Crash report path minimization and coverage counters: static PASS")
