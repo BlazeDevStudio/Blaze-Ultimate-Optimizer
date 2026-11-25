@@ -16,3 +16,6 @@ Logo V2 is the owner-approved *cropped raster* asset, retrieved from the pinned 
 
 ### Source provenance
 The historical v1.0–v1.2 previews remain intact in [BlazingSystems-Labs](https://github.com/BlazeDevStudio/BlazingSystems-Labs/tree/main/BlazeUltimateOptimizer). This dedicated repository contains v1.3 source and reproducible Windows build scripts.
+
+### Diagnostics continuation (unreleased)
+Reference: [Pulse Diagnostics](https://github.com/Regncreative/PulseDiagnostics), MIT license (feature/architecture inspiration only; no upstream source or branding imported). This native continuation keeps diagnostics read-only, reports coverage independently for each Windows event log, and separates unexpected restart from bugcheck-related records. A complete scan means the age cutoff or retained-log EOF was reached, not that seven days of history exist. Scan limits, failed reads and malformed records remain visible. No changes to optimizer actions, service allowlists, or runtime privileges. Mocked scanner tests and native builds do not establish actual Windows runtime or rollback readiness.

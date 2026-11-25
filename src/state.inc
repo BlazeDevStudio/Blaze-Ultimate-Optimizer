@@ -5,7 +5,7 @@ static volatile int g_busy=0;
 static WCHAR g_report[24000];
 static UINT g_pos=0;
 static WCHAR g_reportPath[512];
-static int g_events_ok=0,g_run_count=0,g_highmem=0,g_lowdisk=0,g_extremedisk=0,g_storage_faults=0,g_crashes=0,g_hangs=0,g_bsod=0,g_whea=0,g_sys_err=0,g_app_err=0,g_clr_events=0;
+static int g_events_ok=0,g_run_count=0,g_highmem=0,g_lowdisk=0,g_extremedisk=0,g_storage_faults=0,g_crashes=0,g_hangs=0,g_bsod=0,g_unexpected_power=0,g_whea=0,g_sys_err=0,g_app_err=0,g_clr_events=0;
 static ULONGLONG g_ram=0,g_free=0,g_disk=0,g_uptime=0;
 static unsigned g_memload=0;
 static unsigned g_cpu=0,g_cpuTopPct=0;
