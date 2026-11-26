@@ -16,7 +16,7 @@ static DWORD WINAPI worker(LPVOID ignored){
         g_history_phase=HIST_POST_FIX;
         collect(); /* Refresh the verdict based on the actual post-fix condition. */
         heading(L"ONE-CLICK FIX RECEIPT AND RECHECK");
-        append(L"Visual effects/transparency update: ");line(optApplied?L"attempted and at least one setting applied; reversible via RESTORE PREFERENCES":L"not applied; consult Windows display settings");
+        append(L"Visual effects/transparency update: ");line(optApplied?L"at least one setting read back successfully; recovery record retained":L"no change verified; consult recovery record or Windows display settings");
         append(L"Old personal temp files deleted: ");num(deletedFiles);append(L" (approx ");fmt_size(deletedBytes);line(L" apparent file size)");
         append(L"Free disk: before ");if(beforeDiskOk)fmt_size(beforeDisk);else append(L"unavailable");append(L", after ");if(g_disk_ok)fmt_size(g_free);else append(L"unavailable");nl();
         append(L"Memory load: before ");if(beforeMemOk){num(beforeMem);append(L"%");}else append(L"unavailable");append(L", after ");if(g_mem_ok){num(g_memload);append(L"%");}else append(L"unavailable");line(L" (naturally fluctuates; not a RAM boost)");

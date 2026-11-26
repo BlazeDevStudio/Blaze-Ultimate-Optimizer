@@ -58,6 +58,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Optimization policy tests compile failed' }
           .\optimization_rules_test.exe
           if ($LASTEXITCODE -ne 0) { throw 'Optimization policy tests failed' }
+          clang -std=c11 -Wall -Wextra -Werror tests/recovery_record_test.c -o recovery_record_test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Recovery tests compile failed' }
+          .\recovery_record_test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Recovery tests failed' }
       - name: Fetch checksum-pinned Blaze Systems logo crop
         shell: pwsh
         run: |

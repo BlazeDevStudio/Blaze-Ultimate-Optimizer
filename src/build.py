@@ -8,7 +8,7 @@ all_functions=re.findall(r'^DLL\s+[^\n]+?\s+WINAPI\s+(\w+)\s*\(',s,re.M)
 libs={"kernel32":[],"user32":[],"gdi32":[],"advapi32":[],"shell32":[],"pdh":[],"setupapi":[]}
 user=set('DrawTextW FillRect LoadIconW MessageBoxW PostMessageW SendMessageW DefWindowProcW LoadCursorW RegisterClassExW CreateWindowExW ShowWindow UpdateWindow SetWindowTextW MoveWindow EnableWindow DestroyWindow PostQuitMessage GetMessageW TranslateMessage DispatchMessageW SystemParametersInfoW'.split())
 gdi=set('GetStockObject CreateSolidBrush SetTextColor SetBkMode DeleteObject'.split())
-adv=set('OpenSCManagerW OpenServiceW QueryServiceConfigW ChangeServiceConfigW CloseServiceHandle RegOpenKeyExW RegCreateKeyExW RegQueryValueExW RegSetValueExW RegDeleteValueW RegEnumValueW RegEnumKeyExW RegCloseKey OpenEventLogW ReadEventLogW CloseEventLog'.split())
+adv=set('OpenSCManagerW OpenServiceW QueryServiceConfigW QueryServiceConfig2W ChangeServiceConfigW ChangeServiceConfig2W CloseServiceHandle RegOpenKeyExW RegCreateKeyExW RegQueryValueExW RegSetValueExW RegDeleteValueW RegEnumValueW RegEnumKeyExW RegCloseKey RegFlushKey OpenEventLogW ReadEventLogW CloseEventLog'.split())
 shell={'ShellExecuteW'}
 for a in all_functions:
     x='setupapi' if a.startswith('SetupDi') else 'pdh' if a.startswith('Pdh') else 'user32' if a in user else 'gdi32' if a in gdi else 'advapi32' if a in adv else 'shell32' if a in shell else 'kernel32'

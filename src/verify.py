@@ -2,7 +2,7 @@ from pathlib import Path
 import struct,hashlib
 p=Path(__file__).parent
 exeNames=['BlazeUltimateOptimizer-x64.exe','BlazeUltimateOptimizer-arm64.exe']
-s=''.join((p/name).read_text(encoding='utf-8') for name in ('platform_win32.h','state.inc','text.inc','events.inc','crash_parser.inc','event_scan.inc','health_math.inc','disk_metrics.inc','disk_report.inc','adapter_metrics.inc','adapter_report.inc','history_ring.inc','history_report.inc','sampling.inc','inventory_helpers.inc','inventory.inc','optimization_rules.inc','optimization_report.inc','report.inc','repairs.inc','runtime.inc','ui.inc'))
+s=''.join((p/name).read_text(encoding='utf-8') for name in ('platform_win32.h','state.inc','text.inc','events.inc','crash_parser.inc','event_scan.inc','health_math.inc','disk_metrics.inc','disk_report.inc','adapter_metrics.inc','adapter_report.inc','history_ring.inc','history_report.inc','sampling.inc','inventory_helpers.inc','inventory.inc','optimization_rules.inc','optimization_report.inc','report.inc','recovery_record.inc','recovery_store.inc','repairs.inc','runtime.inc','ui.inc'))
 for name,machine in zip(exeNames,(0x8664,0xAA64)):
  data=(p/name).read_bytes()
  assert data[:2]==b'MZ',name
@@ -65,3 +65,6 @@ assert "opt_evaluate" in s and "OPT_PROTECT" in s and "OPT_CONFIRM_CLEANUP" in s
 rules=(p/"optimization_rules.inc").read_text()
 assert all(api not in rules for api in ("RegSetValue", "ChangeServiceConfig", "DeleteFile", "CreateProcess", "ShellExecute"))
 print("Advisory policy isolation and priority gates: static PASS")
+
+assert "RegFlushKey" in s and "rec_same" in s and "service_read" in s and "QueryServiceConfig2W" in s
+print("Versioned recovery and read-back gates: static PASS")
