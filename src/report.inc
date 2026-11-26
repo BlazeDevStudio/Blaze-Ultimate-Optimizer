@@ -1,36 +1,41 @@
-static void stats(void){MEMORYSTATUSEX mem;mem.dwLength=sizeof(mem);if(GlobalMemoryStatusEx(&mem)){g_ram=mem.ullTotalPhys;g_memload=mem.dwMemoryLoad;g_highmem=mem.dwMemoryLoad>=83;append(L"Physical RAM: ");fmt_size(mem.ullTotalPhys);append(L" | Available: ");fmt_size(mem.ullAvailPhys);append(L" | Memory load: ");num(mem.dwMemoryLoad);line(L"%");append(L"Virtual/commit capacity: ");fmt_size(mem.ullTotalPageFile);append(L" | Available commit: ");fmt_size(mem.ullAvailPageFile);nl();if(g_ram<=2147483648ULL)line(L"DEVICE PROFILE: EXTREME 1-2 GB RAM. Prioritize one active application; pagefile must remain enabled.");
+#include "inventory.inc"
+static void stats(void){MEMORYSTATUSEX mem;mem.dwLength=sizeof(mem);if(GlobalMemoryStatusEx(&mem)&&health_memory_valid(mem.ullTotalPhys,mem.ullAvailPhys,mem.dwMemoryLoad)){g_mem_ok=1;g_ram=mem.ullTotalPhys;g_memload=mem.dwMemoryLoad;g_highmem=mem.dwMemoryLoad>=83;append(L"Physical RAM: ");fmt_size(mem.ullTotalPhys);append(L" | Available: ");fmt_size(mem.ullAvailPhys);append(L" | Memory load: ");num(mem.dwMemoryLoad);line(L"%");append(L"Virtual/commit capacity: ");fmt_size(mem.ullTotalPageFile);append(L" | Available commit: ");fmt_size(mem.ullAvailPageFile);nl();if(g_ram<=2147483648ULL)line(L"DEVICE PROFILE: EXTREME 1-2 GB RAM. Prioritize one active application; pagefile must remain enabled.");
 else if(g_ram<=4294967296ULL)line(L"DEVICE PROFILE: LIGHT 4 GB RAM. High-impact work is grouping/closing unused app sessions.");
-if(mem.ullTotalPageFile<mem.ullTotalPhys+268435456ULL){line(L"NOTICE: Commit capacity is unusually small. Verify the pagefile is SYSTEM-MANAGED.");}}
-WCHAR drive[32];if(!GetEnvironmentVariableW(L"SystemDrive",drive,32))wcopy(drive,L"C:",32);wcat(drive,L"\\",32);ULONGLONG avail,total,freeb;if(GetDiskFreeSpaceExW(drive,&avail,&total,&freeb)){g_disk=total;g_free=avail;g_extremedisk=(avail<1073741824ULL);g_lowdisk=(avail<3ULL*1073741824ULL || (total&&avail*100ULL/total<12ULL));append(L"System drive ");append(drive);append(L": ");fmt_size(total);append(L" total, ");fmt_size(avail);line(L" available");}else line(L"Disk capacity check unavailable.");
-if(g_disk<=20ULL*1073741824ULL)line(L"STORAGE PROFILE: TINY 16-20 GB. Avoid extra applications, temporary copies, and large Windows repair caches.");
-else if(g_disk<=40ULL*1073741824ULL)line(L"STORAGE PROFILE: COMPACT 32-40 GB. Monitor free space during Windows updates and repair operations.");
-g_uptime=GetTickCount64()/3600000ULL;append(L"Uptime: ");num(g_uptime);line(L" hours");metric_cpu();if(g_cpu_ok){append(L"Sample CPU utilization (1500ms): ");num(g_cpu);line(L"% (a momentary sample, not a long-term average)");if(g_cpuTopPct){append(L"Top sampled process CPU share: ");append(g_cpuTopName);append(L" - ");num(g_cpuTopPct);line(L"% of total machine CPU capacity");}}}
+if(mem.ullTotalPageFile<mem.ullTotalPhys+268435456ULL){line(L"NOTICE: Commit capacity is unusually small. Verify the pagefile is SYSTEM-MANAGED.");}}else line(L"Physical RAM/commit snapshot unavailable.");
+WCHAR drive[32];DWORD dn=GetEnvironmentVariableW(L"SystemDrive",drive,32);
+ULONGLONG avail,total,freeb;
+if(dn==2&&((drive[0]>=L'A'&&drive[0]<=L'Z')||(drive[0]>=L'a'&&drive[0]<=L'z'))&&drive[1]==L':'){
+wcat(drive,L"\\",32);
+if(GetDiskFreeSpaceExW(drive,&avail,&total,&freeb)&&total&&avail<=total){
+g_disk_ok=1;g_disk=total;g_free=avail;g_extremedisk=(avail<1073741824ULL);g_lowdisk=(avail<3ULL*1073741824ULL||health_percent(avail,total)<12);
+append(L"System drive ");append(drive);append(L": ");fmt_size(total);append(L" total available to caller, ");fmt_size(avail);line(L" free to caller (quotas may apply).");
+}}
+if(!g_disk_ok)line(L"System drive capacity check unavailable.");
+else if(g_disk<=20ULL*1073741824ULL)line(L"STORAGE PROFILE: TINY 16-20 GB accessible capacity. Avoid extra applications and large repair caches.");
+else if(g_disk<=40ULL*1073741824ULL)line(L"STORAGE PROFILE: COMPACT 32-40 GB accessible capacity. Monitor free space during Windows updates.");
+g_uptime=GetTickCount64()/3600000ULL;append(L"Uptime: ");num(g_uptime);line(L" hours");metric_cpu();if(g_cpu_ok){append(L"Sample CPU utilization (1500ms): ");num(g_cpu);line(L"% (processor-group scope; a momentary sample, not a long-term average)");if(g_cpuTopPct){append(L"Top sampled process CPU share: ");append(g_cpuTopName);append(L" - ");num(g_cpuTopPct);line(L"% of sampled CPU capacity");}}else line(L"Sample CPU utilization unavailable.");}
 static void top_procs(void){process_snapshot();
 line(L"Grouped process private committed bytes (NOT physical RAM saved by closure):");
 for(int i=0;i<g_group_count;i++)for(int j=i+1;j<g_group_count;j++)if(g_group[j].priv>g_group[i].priv){GROUP tmp=g_group[i];g_group[i]=g_group[j];g_group[j]=tmp;}
 for(int i=0;i<g_group_count&&i<8;i++){append(L"  ");append(g_group[i].name);append(L" (processes ");num(g_group[i].processes);append(L"): private commit ");fmt_size(g_group[i].priv);append(L", working-set sum ");fmt_size(g_group[i].working);nl();}
 line(L"Working sets below can double-count shared pages across processes:");line(L"Largest visible process working sets (shared pages included):");for(int i=0;i<8;i++){if(!g_top[i].usage)break;if(i==0)wcopy(g_top1,g_top[i].name,MAX_PATH);append(L"  ");append(g_top[i].name);append(L" [PID ");num(g_top[i].pid);append(L"]: ");fmt_size(g_top[i].usage);nl();}}
-static void make_recommendations(void){heading(L"FINAL VERDICT - EVIDENCE-BASED PRIORITIES");int findings=0;if(g_storage_faults){line(L"PRIORITY 1 - POSSIBLE DISK/CONTROLLER ERRORS");append(L"Found ");num(g_storage_faults);line(L" storage-related System Event IDs during the past 7 days.");line(L"ACTION: Back up important files immediately; inspect Event Viewer event source and storage cabling/health. Use `chkdsk C: /scan` when you have time. Do not repeatedly write to a failing SSD.");findings++;}
-if(g_whea){line(L"HARDWARE/DRIVER WARNINGS - WHEA-like event IDs found; inspect source/provider in Event Viewer. Check heat, power, and driver stability.");findings++;}
-if(g_bsod){line(L"UNEXPECTED SHUTDOWN/BUGCHECK INDICATORS - inspect Kernel-Power 41 and BugCheck events. Event 41 alone does NOT prove a BSOD; it also happens after forced power-off.");findings++;}
-if(g_extremedisk){line(L"CRITICAL FREE SPACE - below 1 GB. Windows may freeze, fail updates, and page heavily.");line(L"ACTION: Run the safe cleanup, then Disk Cleanup; move large downloads off the system drive. Keep the pagefile enabled.");findings++;}
-else if(g_lowdisk){line(L"LOW SYSTEM-DRIVE FREE SPACE - performance and reliability can degrade.");line(L"ACTION: Use cleanup, review Storage Settings / Temporary files, and remove unused app installations selectively.");findings++;}
-if(g_highmem){line(L"HIGH LIVE RAM PRESSURE - memory is heavily occupied now.");
-line(L"ACTION: End only unused app sessions from their own menus; do not force-close unsaved developer tools, Windows services, or the browser that holds active work. Keep the pagefile SYSTEM-MANAGED.");
-if(g_group_count){append(L"Largest private-commit application group: ");append(g_group[0].name);append(L" (multiple processes may be one app session). Private commit is NOT the memory reclaimed by closing it.");nl();}
-findings++;}
-if(g_cpu_ok&&g_cpu>=85){line(L"HIGH INSTANTANEOUS CPU USE - CPU was busy during the sample; recheck when idle. Do not stop Windows security or core system processes.");if(g_cpuTopPct>=15){append(L"Top sampled CPU user: ");append(g_cpuTopName);append(L" (approx ");num(g_cpuTopPct);line(L"% overall). Investigate it before changing startup preferences.");}findings++;}
-if(g_run_count>=8){line(L"MANY LEGACY RUN STARTUP ENTRIES - check Windows Settings > Apps > Startup, disable only programs you recognize and do not need at boot.");findings++;}
-if(g_crashes||g_hangs){append(L"APPLICATION INSTABILITY - ");num(g_crashes);append(L" crash-ID and ");num(g_hangs);line(L" hang-ID records. Consult TARGETED FAULT TRIAGE; SAFE FIX does not repair drivers, applications or these crash records.");findings++;}
-if(g_sys_err>=12||g_app_err>=12){line(L"REPEATED LOGGED ERRORS - investigate the event SOURCE/DETAILS before trying broad Windows repairs.");findings++;}
-if(!g_events_ok){line(L"EVENT LOG ACCESS INCOMPLETE - this report cannot exclude crashes or hardware errors. Run again as administrator for broader visibility.");findings++;}
-if(!findings)line(L"No major pressure flags from sampled metrics and accessible log records. Intermittent freezes still require a longer capture; check temperatures, drivers, and Event Viewer around the exact freeze time.");
-heading(L"LOW-COST REPAIRS TO CONSIDER");line(L"1. Use this tool's SAFE FIX: reversible Windows animations/transparency and old top-level user-temp files.");line(L"2. Open Startup Apps; turn off only unneeded startup programs (leave security software alone).");line(L"3. Windows Security: run a built-in Quick scan if unexplained CPU/disk usage persists.");line(L"4. For corruption: run Command Prompt as admin, `sfc /verifyonly` first. If faults are detected, plan an `sfc /scannow`; DISM may need extra disk space.");line(L"5. For disk errors: `chkdsk C: /scan`. For repeated storage events, back up first and check SSD condition.");line(L"6. Set a lightweight wallpaper/theme, keep simultaneous browser tabs minimal, restart after updates.");line(L"Optional Advanced Risk Mode: explicit 3-second countdown; affects only whitelisted search/indexing/prefetch services, never essential OS/security services. Requires administrator rights and can be rolled back.");
-line(L"NOT recommended: random service disabling, disabling Defender, registry cleaners, forced RAM flushing, fixed tiny pagefiles, or blindly deleting WinSxS/Windows Update files.");
-heading(L"INTERPRETATION AND LIMITS");line(L"Crash clusters are grouped by application, module and exception code. Records and path insertion fields depend on the event provider. Historical crash counts persist after repairs until records age out of the 7-day window.");line(L"A five-second sample may miss intermittent freezing. PageFaultCount includes soft and hard faults. Process I/O transfer bytes include non-disk activity. No measured SSD latency, SMART, or verified hard-fault rate.");}
+#include "optimization_rules.inc"
+#include "optimization_report.inc"
 static void report_title(void){SYSTEMTIME t;GetLocalTime(&t);line(L"BLAZE ULTIMATE OPTIMIZER - Windows 10/11 ultra-low-spec diagnostic v1.3");line(L"Native Windows x64/ARM64 / user-mode / offline / zero telemetry");append(L"Scan date: ");num(t.wYear);append(L"-");num(t.wMonth);append(L"-");num(t.wDay);append(L" ");num(t.wHour);append(L":");if(t.wMinute<10)append(L"0");num(t.wMinute);nl();}
-static void collect(void){reset();report_title();heading(L"LIVE SYSTEM METRICS");stats();activity_sample();heading(L"TOP MEMORY USERS");top_procs();heading(L"STARTUP ENTRIES (REGISTRY RUN KEYS)");reg_count(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",L"User");reg_count(HKEY_LOCAL_MACHINE,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",L"Machine");reg_count(HKEY_LOCAL_MACHINE,L"Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Run",L"Machine x86");append(L"Visible registry Run entries: ");num(g_run_count);line(L". Other startup sources (tasks/services/startup folder) are not counted.");heading(L"WINDOWS EVENT LOGS (PAST 7 DAYS)");DWORD sys=scan_events(L"System"),app=scan_events(L"Application");g_events_ok=(sys||app)?1:0;append(L"Records read: System ");num(sys);append(L", Application ");num(app);nl();append(L"Errors: System ");num(g_sys_err);append(L", Application ");num(g_app_err);nl();append(L"Storage-related IDs: ");num(g_storage_faults);append(L" | WHEA-like IDs: ");num(g_whea);append(L" | power/bugcheck IDs: ");num(g_bsod);nl();append(L"App crash (1000): ");num(g_crashes);append(L" | app hang (1002): ");num(g_hangs);nl();append(L"Provider-matched .NET Runtime Event 1026 records: ");num(g_clr_events);nl();line(L"Counts are clues, not confirmed diagnoses. Read the source/provider and message in Event Viewer. (Max 3500 recent records per log.)");
+static void report_log_coverage(LPCWSTR name,LOG_SCAN scan){
+    append(name);append(L": ");num(scan.count);append(L" records; ");
+    switch(scan.status){
+    case LOG_COMPLETE: line(L"reached age boundary or end of accessible retained log");break;
+    case LOG_OPEN_FAILED: append(L"open failed, Win32 error ");num(scan.error);nl();break;
+    case LOG_READ_FAILED: append(L"read incomplete, Win32 error ");num(scan.error);nl();break;
+    case LOG_LIMIT: line(L"partial - scan budget reached");break;
+    default: line(L"partial - malformed or empty read buffer");break;
+    }
+}
+static void collect(void){reset();report_title();heading(L"LIVE SYSTEM METRICS");stats();activity_sample();heading(L"TOP MEMORY USERS");top_procs();heading(L"STARTUP ENTRIES (REGISTRY RUN KEYS)");reg_count(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",L"User");reg_count(HKEY_LOCAL_MACHINE,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",L"Machine");reg_count(HKEY_LOCAL_MACHINE,L"Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Run",L"Machine x86");append(L"Visible registry Run entries: ");num(g_run_count);line(L". Other startup sources (tasks/services/startup folder) are not counted.");heading(L"WINDOWS EVENT LOGS (PAST 7 DAYS)");LOG_SCAN sys=scan_events(L"System"),app=scan_events(L"Application");g_events_ok=(sys.status==LOG_COMPLETE&&app.status==LOG_COMPLETE);report_log_coverage(L"System",sys);report_log_coverage(L"Application",app);append(L"Errors: System ");num(g_sys_err);append(L", Application ");num(g_app_err);nl();append(L"Storage-related IDs: ");num(g_storage_faults);append(L" | WHEA-like IDs: ");num(g_whea);append(L" | unexpected restart (41): ");num(g_unexpected_power);append(L" | bugcheck-related (1001): ");num(g_bsod);nl();append(L"App crash (1000): ");num(g_crashes);append(L" | app hang (1002): ");num(g_hangs);nl();append(L"Provider-matched .NET Runtime Event 1026 records: ");num(g_clr_events);nl();line(L"Counts are clues, not confirmed diagnoses. Read source/provider and message in Event Viewer. Scan stops at age boundary, end of retained records, or 3500 records/60 reads per log. Cleared logs or clock changes may limit history.");
 heading(L"APPLICATION CRASH CLUSTERS - EVENT 1000 DETAILS");
+append(L"Grouped records: ");num(g_crash_grouped);append(L" | unsupported/malformed fields: ");num(g_crash_rejected);append(L" | outside 12-group capacity: ");num(g_crash_ungrouped);nl();
+line(L"Full executable paths are not retained or reported. App/module names and other local identifiers may still be sensitive; review before sharing.");
 if(!g_app_names_count)line(L"No parseable Application Error 1000 insertion strings in sampled records.");
 for(int i=0;i<g_app_names_count;i++)for(int j=i+1;j<g_app_names_count;j++)if(g_faults[j].count>g_faults[i].count){FAULT tmp=g_faults[i];g_faults[i]=g_faults[j];g_faults[j]=tmp;}
 for(int i=0;i<g_app_names_count;i++){
@@ -39,7 +44,6 @@ for(int i=0;i<g_app_names_count;i++){
     if(g_faults[i].exception[0]){append(L" | exception: ");append(g_faults[i].exception);}
     if(g_faults[i].newest&&g_current_event_epoch>=g_faults[i].newest){append(L" | latest approximately ");num((g_current_event_epoch-g_faults[i].newest)/3600ULL);append(L"h ago");}
     nl();
-    if(g_faults[i].appPath[0]){append(L"    app path: ");append(g_faults[i].appPath);nl();}
 }
 line(L"Event 1000 inserted fields are evidence, not proof that the named module caused the fault. Records may repeat or be truncated.");
 heading(L"TARGETED FAULT TRIAGE - NO AUTOMATIC DRIVER CHANGES");
@@ -50,8 +54,8 @@ for(int i=0;i<g_app_names_count;i++){
   }else if(contains_ci(g_faults[i].name,L"E_YAR")||contains_ci(g_faults[i].module,L"E_YAP")){
     if(!epsonReported){line(L"EPSON-RELATED: Possible Epson printer status-monitor component. Repair the matching utility if needed; do not disable the Windows Print Spooler.");epsonReported=1;}matched=1;
   }else if(same_ci(g_faults[i].module,L"KERNELBASE.dll")){
-    line(L"GENERIC WINDOWS MODULE: KERNELBASE.dll identifies where an exception surfaced, not necessarily the cause. Use the app path and exception code to investigate this specific program.");matched=1;
+    line(L"GENERIC WINDOWS MODULE: KERNELBASE.dll identifies where an exception surfaced, not necessarily the cause. Use the app name and exception code, and inspect the full path locally in Event Viewer if needed.");matched=1;
   }
 }
 if(!matched)line(L"No safe vendor-specific repair pattern matched. Inspect full Event Viewer messages before changing drivers or services.");
-make_recommendations();}
+make_recommendations();history_report();inventory_report();}

@@ -1,23 +1,27 @@
-static void save_report(void){WCHAR base[512];DWORD n=GetEnvironmentVariableW(L"LOCALAPPDATA",base,512);if(!n||n>=512){n=GetTempPathW(512,base);if(!n||n>=512)return;}else wcat(base,L"\\",512);wcopy(g_reportPath,base,512);wcat(g_reportPath,L"BlazeUltimateOptimizer-Report.txt",512);HANDLE h=CreateFileW(g_reportPath,GENERIC_WRITE,FILE_SHARE_READ,0,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,0);if(h==INVALID_HANDLE_VALUE)return;DWORD wrote;WORD bom=0xFEFF;WriteFile(h,&bom,2,&wrote,0);WriteFile(h,g_report,g_pos*2,&wrote,0);CloseHandle(h);}
+static void save_report(void){g_report_saved=0;g_reportPath[0]=0;WCHAR base[512];DWORD n=GetEnvironmentVariableW(L"LOCALAPPDATA",base,512);if(!n||n>=512){n=GetTempPathW(512,base);if(!n||n>=512)return;}else wcat(base,L"\\",512);wcopy(g_reportPath,base,512);wcat(g_reportPath,L"BlazeUltimateOptimizer-Report.txt",512);HANDLE h=CreateFileW(g_reportPath,GENERIC_WRITE,FILE_SHARE_READ,0,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,0);if(h==INVALID_HANDLE_VALUE)return;DWORD wrote;WORD bom=0xFEFF;int ok=WriteFile(h,&bom,2,&wrote,0)&&wrote==2; if(ok)ok=WriteFile(h,g_report,g_pos*2,&wrote,0)&&wrote==g_pos*2;CloseHandle(h);g_report_saved=ok;}
 static DWORD WINAPI worker(LPVOID ignored){
     (void)ignored;
+    g_history_phase=g_mode==0?HIST_DIAGNOSE:HIST_PRE_ACTION;
     collect();
     if(g_mode==1){
         ULONGLONG beforeDisk=g_free;
         unsigned beforeMem=g_memload;
+        int beforeDiskOk=g_disk_ok,beforeMemOk=g_mem_ok;
         /* Safe actions are performed only after explicit confirmation on the UI thread. */
         visual_optimize();
         clean_user_temp();
         ULONGLONG deletedBytes=g_freed;
         unsigned deletedFiles=g_deleted;
         int optApplied=g_opt_ok;
+        g_history_phase=HIST_POST_FIX;
         collect(); /* Refresh the verdict based on the actual post-fix condition. */
         heading(L"ONE-CLICK FIX RECEIPT AND RECHECK");
-        append(L"Visual effects/transparency update: ");line(optApplied?L"attempted and at least one setting applied; reversible via RESTORE PREFERENCES":L"not applied; consult Windows display settings");
+        append(L"Visual effects/transparency update: ");line(optApplied?L"at least one setting read back successfully; recovery record retained":L"no change verified; consult recovery record or Windows display settings");
         append(L"Old personal temp files deleted: ");num(deletedFiles);append(L" (approx ");fmt_size(deletedBytes);line(L" apparent file size)");
-        append(L"Free disk: before ");fmt_size(beforeDisk);append(L", after ");fmt_size(g_free);nl();
-        append(L"Memory load: before ");num(beforeMem);append(L"%, after ");num(g_memload);line(L"% (naturally fluctuates; not a RAM boost)");
-if(g_memload+4<=beforeMem)line(L"OUTCOME: lower observed RAM load, but this snapshot cannot attribute the change to the repair.");
+        append(L"Free disk: before ");if(beforeDiskOk)fmt_size(beforeDisk);else append(L"unavailable");append(L", after ");if(g_disk_ok)fmt_size(g_free);else append(L"unavailable");nl();
+        append(L"Memory load: before ");if(beforeMemOk){num(beforeMem);append(L"%");}else append(L"unavailable");append(L", after ");if(g_mem_ok){num(g_memload);append(L"%");}else append(L"unavailable");line(L" (naturally fluctuates; not a RAM boost)");
+if(!beforeMemOk||!g_mem_ok)line(L"OUTCOME: RAM comparison unavailable; cannot determine a measured change.");
+else if(g_memload+4<=beforeMem)line(L"OUTCOME: lower observed RAM load, but this snapshot cannot attribute the change to the repair.");
 else line(L"OUTCOME: NO MEASURABLE RAM RELIEF from safe fix. Focus on unused application sessions or the specific crash clusters above.");
 if(g_crashes)line(L"UNRESOLVED: historical application crashes remain. SAFE FIX does not repair printer/audio drivers or third-party apps.");
         line(L"Deleted temp files cannot be restored. No system services, pagefile, or security settings were modified.");
