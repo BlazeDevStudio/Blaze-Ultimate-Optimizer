@@ -2,7 +2,7 @@ from pathlib import Path
 import struct,hashlib
 p=Path(__file__).parent
 exeNames=['BlazeUltimateOptimizer-x64.exe','BlazeUltimateOptimizer-arm64.exe']
-s=''.join((p/name).read_text(encoding='utf-8') for name in ('platform_win32.h','state.inc','text.inc','events.inc','crash_parser.inc','event_scan.inc','health_math.inc','disk_metrics.inc','disk_report.inc','adapter_metrics.inc','adapter_report.inc','history_ring.inc','history_report.inc','sampling.inc','inventory_helpers.inc','inventory.inc','optimization_rules.inc','optimization_report.inc','report.inc','recovery_record.inc','recovery_store.inc','repairs.inc','runtime.inc','ui.inc'))
+s=''.join((p/name).read_text(encoding='utf-8') for name in ('platform_win32.h','state.inc','text.inc','events.inc','crash_parser.inc','event_scan.inc','health_math.inc','disk_metrics.inc','disk_report.inc','adapter_metrics.inc','adapter_report.inc','history_ring.inc','history_report.inc','sampling.inc','inventory_helpers.inc','inventory.inc','optimization_rules.inc','optimization_report.inc','report.inc','recovery_record.inc','recovery_store.inc','repairs.inc','runtime.inc','dashboard_layout.inc','dashboard.inc','ui.inc'))
 for name,machine in zip(exeNames,(0x8664,0xAA64)):
  data=(p/name).read_bytes()
  assert data[:2]==b'MZ',name
@@ -25,7 +25,7 @@ print('Static allowlist, branding, crash parser, and PE gates: PASS')
 
 assert 'BS_OWNERDRAW' not in s and 'WM_DRAWITEM' not in s
 assert 'WS_TABSTOP|BS_PUSHBUTTON' in s
-assert 'int cols=(w>=520)?2:1' in s
+assert 'dash_layout(w,h)' in s and 'dashboard_publish()' in s
 assert '1.3.0.0' in (p/'resources.py').read_text()
 print('Native label visibility/keyboard hotfix: PASS (static only; Windows runtime test pending)')
 
@@ -68,3 +68,6 @@ print("Advisory policy isolation and priority gates: static PASS")
 
 assert "RegFlushKey" in s and "rec_same" in s and "service_read" in s and "QueryServiceConfig2W" in s
 print("Versioned recovery and read-back gates: static PASS")
+
+assert 'BeginPaint' in s and 'EndPaint' in s and 'IsDialogMessageW' in s and 'g_report_saved' in s
+print('Native dashboard paint, keyboard and report save gates: static PASS')

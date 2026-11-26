@@ -62,6 +62,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Recovery tests compile failed' }
           .\recovery_record_test.exe
           if ($LASTEXITCODE -ne 0) { throw 'Recovery tests failed' }
+          clang -std=c11 -Wall -Wextra -Werror tests/dashboard_test.c -o dashboard_test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Dashboard tests compile failed' }
+          .\dashboard_test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Dashboard tests failed' }
       - name: Fetch checksum-pinned Blaze Systems logo crop
         shell: pwsh
         run: |

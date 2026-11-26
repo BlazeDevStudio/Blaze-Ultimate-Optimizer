@@ -45,6 +45,7 @@ static void make_recommendations(void){
     i.logsComplete=g_events_ok;i.metricsComplete=g_mem_ok&&g_disk_ok&&g_cpu_ok&&g_cpu_intervals==5;
     i.diskComplete=g_disk_perf_valid==DISK_METRIC_COUNT;i.adaptersComplete=g_adapter_perf_valid==ADAPTER_METRIC_COUNT;
     OPT_PLAN p=opt_evaluate(&i);
+    g_last_priority=p.items[0].priority;g_last_findings=p.count;
     heading(L"FINAL VERDICT - EVIDENCE-BASED PRIORITIES");
     line(L"Local rules rank observed signals, not diagnoses or a numerical health score. No action is executed by this engine.");
     for(unsigned j=0;j<p.count;j++)opt_report_item(&p.items[j],&i);

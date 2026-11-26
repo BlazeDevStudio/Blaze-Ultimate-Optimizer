@@ -6,8 +6,8 @@ subprocess.run([sys.executable,str(p/'resources.py')],check=True)
 s=(p/'platform_win32.h').read_text(encoding='utf-8')
 all_functions=re.findall(r'^DLL\s+[^\n]+?\s+WINAPI\s+(\w+)\s*\(',s,re.M)
 libs={"kernel32":[],"user32":[],"gdi32":[],"advapi32":[],"shell32":[],"pdh":[],"setupapi":[]}
-user=set('DrawTextW FillRect LoadIconW MessageBoxW PostMessageW SendMessageW DefWindowProcW LoadCursorW RegisterClassExW CreateWindowExW ShowWindow UpdateWindow SetWindowTextW MoveWindow EnableWindow DestroyWindow PostQuitMessage GetMessageW TranslateMessage DispatchMessageW SystemParametersInfoW'.split())
-gdi=set('GetStockObject CreateSolidBrush SetTextColor SetBkMode DeleteObject'.split())
+user=set('DrawTextW FillRect BeginPaint EndPaint GetClientRect InvalidateRect IsDialogMessageW LoadIconW MessageBoxW PostMessageW SendMessageW DefWindowProcW LoadCursorW RegisterClassExW CreateWindowExW ShowWindow UpdateWindow SetWindowTextW MoveWindow EnableWindow DestroyWindow PostQuitMessage GetMessageW TranslateMessage DispatchMessageW SystemParametersInfoW'.split())
+gdi=set('GetStockObject CreateSolidBrush SelectObject SetTextColor SetBkMode DeleteObject'.split())
 adv=set('OpenSCManagerW OpenServiceW QueryServiceConfigW QueryServiceConfig2W ChangeServiceConfigW ChangeServiceConfig2W CloseServiceHandle RegOpenKeyExW RegCreateKeyExW RegQueryValueExW RegSetValueExW RegDeleteValueW RegEnumValueW RegEnumKeyExW RegCloseKey RegFlushKey OpenEventLogW ReadEventLogW CloseEventLog'.split())
 shell={'ShellExecuteW'}
 for a in all_functions:

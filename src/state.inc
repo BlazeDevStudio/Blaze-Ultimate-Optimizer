@@ -36,3 +36,6 @@ static TOP g_top[8];
 typedef struct {HANDLE h; DWORD pid; WCHAR name[MAX_PATH]; ULONGLONG ticks;} CPU_ENTRY;
 static CPU_ENTRY g_cpu_samples[320];
 
+
+static unsigned g_last_priority=0,g_last_findings=0;
+static int g_report_saved=0;
